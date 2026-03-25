@@ -1,0 +1,23 @@
+{
+  "name": "cloud-guardian",
+  "version": "1.0.0",
+  "description": "A FinOps and DevSecOps Project",
+  "homepage": "https://github.com/Anshul-exe/Autonomous-Cloud-Guardian#readme",
+  "bugs": {
+    "url": "https://github.com/Anshul-exe/Autonomous-Cloud-Guardian/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Anshul-exe/Autonomous-Cloud-Guardian.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "expresss": "^0.0.0"
+  }
+}
