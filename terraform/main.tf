@@ -74,6 +74,16 @@ resource "aws_security_group" "cloud_guardian_sg" {
   }
 }
 
+resource "aws_ssm_parameter" "ec2_ip" {
+  name  = "/cloud-guardian/ec2-public-ip"
+  type  = "String"
+  value = aws_instance.app.public_ip
+
+  tags = {
+    Project = "cloud-guardian"
+  }
+}
+
 # EC2 Instance
 resource "aws_instance" "cloud_guardian" {
   ami           = data.aws_ami.amazon_linux_2.id
