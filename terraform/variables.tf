@@ -7,7 +7,7 @@ variable "aws_region" {
 variable "my_ip" {
   description = "Your public IP for SSH access"
   type        = string
-  default     = "157.49.112.163/32"
+  default     = null
 }
 
 variable "instance_type" {

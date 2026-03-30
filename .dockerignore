@@ -1,0 +1,16 @@
+.terraform/
+*.pem
+*.pub
+*.tfstate
+node_modules/
+npm-debug.log*
+
+dist/
+build/
+log/
+*.log
+
+.git/
+.gitignore
+.env
+Dockerfile

@@ -4,11 +4,23 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
+    http = {
+      source  = "hashicorp/http"
+      version = "~> 3.0"
+    }
   }
 }
 
 provider "aws" {
   region = var.aws_region
+}
+
+data "http" "my_public_ip" {
+  url = "https://checkip.amazonaws.com"
+}
+
+locals {
+  ssh_source_cidr = var.my_ip != null && trimspace(var.my_ip) != "" ? var.my_ip : "${trimspace(data.http.my_public_ip.response_body)}/32"
 }
 
 data "aws_ami" "amazon_linux_2" {
@@ -37,7 +49,7 @@ resource "aws_security_group" "cloud_guardian_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.my_ip]
+    cidr_blocks = [local.ssh_source_cidr]
   }
 
   ingress {
@@ -45,7 +57,7 @@ resource "aws_security_group" "cloud_guardian_sg" {
     from_port   = var.app_port
     to_port     = var.app_port
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] # Open to internet for demo
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
