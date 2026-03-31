@@ -44,12 +44,13 @@ jobs:
           fi
 
       - name: Download image artifact
-        uses: actions/download-artifact@v4
+        uses: dawidd6/action-download-artifact@v6
         with:
+          workflow: ci.yml
           name: docker-image-${{ steps.sha.outputs.sha }}
           path: /tmp
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          search_artifacts: true
+          if_no_artifact_found: fail
 
       - name: Load Docker image
         run: docker load -i /tmp/image.tar
