@@ -35,6 +35,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Semgrep and generate SARIF
+        id: semgrep
         run: |
           semgrep scan \
             --config p/javascript \
@@ -43,13 +44,21 @@ jobs:
             --config p/command-injection \
             --sarif \
             --output semgrep.sarif \
-            app/ || true
+            --error \
+            app/
+        continue-on-error: true
 
       - name: Upload Semgrep SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: semgrep.sarif
+
+      - name: Fail if vulnerabilities found
+        if: steps.semgrep.outcome == 'failure'
+        run: |
+          echo "::error::Semgrep found security vulnerabilities in your code!"
+          exit 1
 
   # JOB2 - Trivy Image Scan
   trivy-image-scan:
@@ -96,6 +105,7 @@ jobs:
           echo "IMAGE_REF=${{ env.IMAGE_NAME }}:latest" >> $GITHUB_ENV
 
       - name: Trivy vulnerability scan
+        id: trivy
         if: env.IMAGE_REF != ''
         uses: aquasecurity/trivy-action@0.28.0
         continue-on-error: true
@@ -103,9 +113,9 @@ jobs:
           image-ref: ${{ env.IMAGE_REF }}
           format: sarif
           output: trivy-results.sarif
-          exit-code: "1" # high/critical bug milne pe exit
+          exit-code: "1"
           severity: "CRITICAL,HIGH"
-          ignore-unfixed: true # vulnerabiltiy=true & patch=false(not out yet) = ignore
+          ignore-unfixed: true
           vuln-type: "os,library"
 
       - name: Upload Trivy SARIF to GitHub Security tab
@@ -119,5 +129,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: trivy-report-${{ github.run_id }}
-        path: trivy-results.sarif
-        retention-days: 30
+          path: trivy-results.sarif
+          retention-days: 30
+
+      - name: Fail if critical vulnerabilities found
+        if: steps.trivy.outcome == 'failure'
+        run: |
+          echo "::error::Trivy found CRITICAL/HIGH vulnerabilities in the container image!"
+          exit 1
