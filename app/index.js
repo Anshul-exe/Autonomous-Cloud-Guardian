@@ -34,28 +34,28 @@ app.get("/load", (req, res) => {
 
 // INTENTIONAL VULNERABILITY #1: eval() - Code Injection
 // This should be caught by Semgrep SAST
-app.get("/eval", (req, res) => {
-  const code = req.query.code || "1+1";
-  try {
-    const result = eval(code); // eslint-disable-line no-eval
-    res.json({ result });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-// INTENTIONAL VULNERABILITY #2: Command Injection
-// No input sanitization - should be caught by security scanners
-app.get("/ping", (req, res) => {
-  const host = req.query.host || "localhost";
-  exec(`ping -c 1 ${host}`, (error, stdout) => {
-    // eslint-disable-line security/detect-child-process
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
-    res.json({ output: stdout });
-  });
-});
+// app.get("/eval", (req, res) => {
+//   const code = req.query.code || "1+1";
+//   try {
+//     const result = eval(code); // eslint-disable-line no-eval
+//     res.json({ result });
+//   } catch (error) {
+//     res.status(400).json({ error: error.message });
+//   }
+// });
+//
+// // INTENTIONAL VULNERABILITY #2: Command Injection
+// // No input sanitization - should be caught by security scanners
+// app.get("/ping", (req, res) => {
+//   const host = req.query.host || "localhost";
+//   exec(`ping -c 1 ${host}`, (error, stdout) => {
+//     // eslint-disable-line security/detect-child-process
+//     if (error) {
+//       return res.status(500).json({ error: error.message });
+//     }
+//     res.json({ output: stdout });
+//   });
+// });
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
