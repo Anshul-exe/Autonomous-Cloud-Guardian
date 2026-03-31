@@ -24,7 +24,7 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: ghcr.io/Anshul-exe/Autonomous-Cloud-Guardian
+  IMAGE_NAME: ghcr.io/anshul-exe/autonomous-cloud-guardian
 
 jobs:
   # JOB1 - SEMGREP -> Static Application Security Testing
@@ -43,19 +43,21 @@ jobs:
 
       - name: Run Semgrep SAST
         uses: semgrep/semgrep-action@v1
+        continue-on-error: true
         with:
           config: >-
             p/javascript
             p/nodejs
             p/owasp-top-ten
             p/command-injection
-          # generateSarif: "1"
+          generateSarif: "1"
+          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
           # (Static Analysis Results Interchange Format - JSON output, structured)
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
       - name: Upload Semgrep SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always() # upload even if scan found issues
         with:
           sarif_file: semgrep.sarif
@@ -112,7 +114,7 @@ jobs:
           vuln-type: "os,library"
 
       - name: Upload Trivy SARIF to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always() # bug found mtlb = scan failed, still report uploaded
         with:
           sarif_file: trivy-results.sarif

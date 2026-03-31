@@ -14,7 +14,7 @@ on:
       - "/app**"
 
 env:
-  IMAGE_NAME: ghcr.io/Anshul-exe/Autonomous-Cloud-Guardian
+  IMAGE_NAME: ghcr.io/anshul-exe/autonomous-cloud-guardian
   NODE_VERSION: "20"
 
 jobs:
