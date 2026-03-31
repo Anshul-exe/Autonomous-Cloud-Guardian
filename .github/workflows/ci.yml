@@ -23,35 +23,35 @@ jobs:
     name: "ESLint"
     runs-on: ubuntu-latest
 
-  steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: node setup
-      uses: actions/node-setup@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: "npm"
-        cache-dependency-path: app/package-lock.json
+      - name: node setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: app/package-lock.json
 
-    - name: installatons
-      run: cd app && npm ci
+      - name: installatons
+        run: cd app && npm ci
 
-    - name: Run ESLint
-      run: cd app & npx eslint index.js --max-warnings=0
+      - name: Run ESLint
+        run: cd app & npx eslint index.js --max-warnings=0
 
-    - name: npm audit
-      run: cd app && npm audit --audit-level=high
+      - name: npm audit
+        run: cd app && npm audit --audit-level=high
 
-    - name: Build image
-      run: docker build -t ${{ env.IMAGE_NAME }}:${{ github.sha }} ./app
+      - name: Build image
+        run: docker build -t ${{ env.IMAGE_NAME }}:${{ github.sha }} ./app
 
-    - name: Save image as artifat in tmp
-      run: docker save ${{ env.IMAGE_NAME }}:${{ github.sha }} -o /tmp/image.tar
+      - name: Save image as artifat in tmp
+        run: docker save ${{ env.IMAGE_NAME }}:${{ github.sha }} -o /tmp/image.tar
 
-    - name: artifact upload
-      uses: actions/upload-artifact@v4
-      with:
-        name: docker-image-${{ github.sha }}
-        path: /tmp/image.tar
-        retention-days: 1
+      - name: artifact upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-${{ github.sha }}
+          path: /tmp/image.tar
+          retention-days: 1
