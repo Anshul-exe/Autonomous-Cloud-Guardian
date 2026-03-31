@@ -8,7 +8,7 @@ on:
       - "app/**"
       - ".github/workflows/security.yml"
 
-  pull_requests:
+  pull_request:
     branches:
       - main
     path:
