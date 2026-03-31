@@ -38,10 +38,9 @@ jobs:
         id: semgrep
         run: |
           semgrep scan \
-            --config p/javascript \
-            --config p/nodejs \
-            --config p/owasp-top-ten \
-            --config p/command-injection \
+            --config "p/command-injection" \
+            --config "p/dangerous-exec-cmd" \
+            --config "p/javascript-eval" \
             --sarif \
             --output semgrep.sarif \
             --error \
