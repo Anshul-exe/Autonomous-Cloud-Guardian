@@ -1,8 +1,8 @@
-name: Security checks after ci acceptance
+name: Security Scans
 
 on:
   workflow_run:
-    workflows: ["CI to start with"]
+    workflows: ["CI"]
     types: [completed]
 
   schedule:
@@ -27,33 +27,31 @@ jobs:
       actions: read
       contents: read
 
+    container:
+      image: semgrep/semgrep
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Run Semgrep SAST
-        uses: semgrep/semgrep-action@v1
-        continue-on-error: true
-        with:
-          config: >-
-            p/javascript
-            p/nodejs
-            p/owasp-top-ten
-            p/command-injection
-          # generateSarif: "1"
-          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
-          # (Static Analysis Results Interchange Format - JSON output, structured)
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
-          SEMGREP_ENABLE_VERSION_CHECK: "false"
+      - name: Run Semgrep and generate SARIF
+        run: |
+          semgrep scan \
+            --config p/javascript \
+            --config p/nodejs \
+            --config p/owasp-top-ten \
+            --config p/command-injection \
+            --sarif \
+            --output semgrep.sarif \
+            app/ || true
 
       - name: Upload Semgrep SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
-        if: always() # upload even if scan found issues
+        if: always()
         with:
           sarif_file: semgrep.sarif
 
-  # JOB2 - Trivy se Image Scan
+  # JOB2 - Trivy Image Scan
   trivy-image-scan:
     name: "Trivy Image Scan"
     if: >
@@ -65,13 +63,15 @@ jobs:
       security-events: write
       actions: read
       contents: read
+      packages: read
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Download image artifact (push/PR runs)
+      - name: Download image artifact
         if: github.event_name != 'schedule'
+        id: download
         uses: actions/download-artifact@v4
         with:
           name: docker-image-${{ github.event.workflow_run.head_sha }}
@@ -80,24 +80,24 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
-      - name: Load image from artifact (push/PR runs)
-        if: github.event_name != 'schedule'
+      - name: Load image from artifact
+        if: github.event_name != 'schedule' && steps.download.outcome == 'success'
+        id: load
         run: |
-          if [ -f /tmp/image.tar ]; then
-            docker load -i /tmp/image.tar
-            echo "IMAGE_REF=${{ env.IMAGE_NAME }}:${{ github.event.workflow_run.head_sha }}" >> $GITHUB_ENV
-          fi
+          docker load -i /tmp/image.tar
+          echo "IMAGE_REF=${{ env.IMAGE_NAME }}:${{ github.event.workflow_run.head_sha }}" >> $GITHUB_ENV
+          echo "loaded=true" >> $GITHUB_OUTPUT
 
-      - name: Pull latest image from GHCR (scheduled nightly runs)
-        if: github.event_name == 'schedule'
+      - name: Pull latest image from GHCR (fallback/scheduled)
+        if: github.event_name == 'schedule' || steps.load.outputs.loaded != 'true'
         run: |
-          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io \
-            -u ${{ github.actor }} --password-stdin
-          docker pull ${{ env.IMAGE_NAME }}:latest
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker pull ${{ env.IMAGE_NAME }}:latest || exit 0
           echo "IMAGE_REF=${{ env.IMAGE_NAME }}:latest" >> $GITHUB_ENV
 
-      - name: Trivy scan — security gate
-        uses: aquasecurity/trivy-action@master
+      - name: Trivy vulnerability scan
+        if: env.IMAGE_REF != ''
+        uses: aquasecurity/trivy-action@0.28.0
         continue-on-error: true
         with:
           image-ref: ${{ env.IMAGE_REF }}
@@ -109,15 +109,15 @@ jobs:
           vuln-type: "os,library"
 
       - name: Upload Trivy SARIF to GitHub Security tab
+        if: always() && hashFiles('trivy-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@v4
-        if: always() # bug found mtlb = scan failed, still report uploaded
         with:
           sarif_file: trivy-results.sarif
 
-      - name: Upload raw Trivy report as artifact
+      - name: Upload Trivy report artifact
+        if: always() && hashFiles('trivy-results.sarif') != ''
         uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: trivy-report-${{ github.sha }}
-          path: trivy-results.sarif
+          name: trivy-report-${{ github.run_id }}
+        path: trivy-results.sarif
           retention-days: 30

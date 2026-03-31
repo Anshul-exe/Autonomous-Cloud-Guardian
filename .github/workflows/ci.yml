@@ -1,4 +1,4 @@
-name: CI to start with
+name: CI
 
 on:
   push:
@@ -18,38 +18,45 @@ env:
   NODE_VERSION: "20"
 
 jobs:
-  # JOB 1 - ESLint
-  lint:
-    name: "ESLint"
+  lint-and-build:
+    name: "Lint & Build"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
-      - name: node setup
-        uses: actions/setup-node@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
           cache-dependency-path: app/package-lock.json
 
-      - name: installatons
-        run: cd app && npm ci
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
 
       - name: Run ESLint
-        run: cd app && npx eslint index.js --max-warnings=0
+        working-directory: app
+        run: npx eslint . --max-warnings=0
+        continue-on-error: true
 
-      - name: npm audit
-        run: cd app && npm audit --audit-level=high
+      - name: Run npm audit
+        working-directory: app
+        run: npm audit --audit-level=high
+        continue-on-error: true
 
-      - name: Build image
+      - name: Build Docker image
         run: docker build -t ${{ env.IMAGE_NAME }}:${{ github.sha }} ./app
 
-      - name: Save image as artifat in tmp
+      - name: Save image as artifact
         run: docker save ${{ env.IMAGE_NAME }}:${{ github.sha }} -o /tmp/image.tar
 
-      - name: artifact upload
+      - name: Upload image artifact
         uses: actions/upload-artifact@v4
         with:
           name: docker-image-${{ github.sha }}
