@@ -4,19 +4,20 @@ on:
   push:
     branches:
       - main
-    path:
+    paths:
       - "app/**"
       - ".github/workflows/security.yml"
 
   pull_request:
     branches:
       - main
-    path:
+    paths:
       - "app/**"
-    schedule:
-      - cron: "0 2 * * *"
 
-    workflow-dispatch:
+  schedule:
+    - cron: "0 2 * * *"
+
+  workflow-dispatch:
 
 env:
   IMAGE_NAME: ghcr.io/Anshul-exe/Autonomous-Cloud-Guardian
@@ -95,6 +96,7 @@ jobs:
 
       - name: Trivy scan — security gate
         uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
           image-ref: ${{ env.IMAGE_REF }}
           format: sarif

@@ -4,13 +4,13 @@ on:
   push:
     branches:
       - main
-    path:
+    paths:
       - "app/**"
       - ".github/workflows/ci.yml"
   pull_request:
     branch:
       - main
-    path:
+    paths:
       - "/app**"
 
 env:
