@@ -1,5 +1,4 @@
 const express = require("express");
-const { exec } = require("child_process");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,25 +31,6 @@ app.get("/load", (req, res) => {
   res.json({ message: "CPU load simulated", result: sum });
 });
 
-app.get("/eval", (req, res) => {
-  const code = req.query.code || "1+1";
-  try {
-    const result = eval(code);
-    res.json({ result });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-app.get("/ping", (req, res) => {
-  const host = req.query.host || "localhost";
-  exec(`ping -c 1 ${host}`, (error, stdout) => {
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
-    res.json({ output: stdout });
-  });
-});
 // vulnerabilities here
 
 app.listen(PORT, () => {
