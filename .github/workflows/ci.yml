@@ -2,7 +2,7 @@ name: CI to start with
 
 on:
   push:
-    branch:
+    branches:
       - main
     path:
       - "app/**"
