@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Run Semgrep SAST
         uses: semgrep/semgrep-action@v1
@@ -37,11 +37,12 @@ jobs:
             p/nodejs
             p/owasp-top-ten
             p/command-injection
-          generateSarif: "1"
+          # generateSarif: "1"
           publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
           # (Static Analysis Results Interchange Format - JSON output, structured)
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+          SEMGREP_ENABLE_VERSION_CHECK: "false"
 
       - name: Upload Semgrep SARIF to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
@@ -74,6 +75,7 @@ jobs:
           name: docker-image-${{ github.event.workflow_run.head_sha }}
           path: /tmp
           run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
 
       - name: Load image from artifact (push/PR runs)
