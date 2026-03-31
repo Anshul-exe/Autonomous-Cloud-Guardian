@@ -120,4 +120,4 @@ jobs:
         with:
           name: trivy-report-${{ github.run_id }}
         path: trivy-results.sarif
-          retention-days: 30
+        retention-days: 30
