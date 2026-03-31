@@ -22,6 +22,13 @@ app.get("/health", (req, res) => {
   });
 });
 
+// Hello endpoint
+app.get("/hello", (req, res) => {
+  res.json({
+    message: "hello world",
+  });
+});
+
 // Dummy load endpoint
 app.get("/load", (req, res) => {
   let sum = 0;
