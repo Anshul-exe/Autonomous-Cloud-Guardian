@@ -8,10 +8,10 @@ on:
       - "app/**"
       - ".github/workflows/ci.yml"
   pull_request:
-    branch:
+    branches:
       - main
     paths:
-      - "/app**"
+      - "app/**"
 
 env:
   IMAGE_NAME: ghcr.io/anshul-exe/autonomous-cloud-guardian
