@@ -107,7 +107,7 @@ jobs:
       - name: Trivy vulnerability scan
         id: trivy
         if: env.IMAGE_REF != ''
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.35.0
         continue-on-error: true
         with:
           image-ref: ${{ env.IMAGE_REF }}
