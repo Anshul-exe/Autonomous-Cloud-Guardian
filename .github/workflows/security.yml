@@ -17,7 +17,7 @@ on:
   schedule:
     - cron: "0 2 * * *"
 
-  workflow-dispatch:
+  workflow_dispatch:
 
 env:
   IMAGE_NAME: ghcr.io/Anshul-exe/Autonomous-Cloud-Guardian
