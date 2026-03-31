@@ -1,0 +1,25 @@
+rules:
+  - id: detect-eval
+    patterns:
+      - pattern: eval(...)
+    message: "Dangerous use of eval() - allows arbitrary code execution"
+    languages: [javascript, typescript]
+    severity: ERROR
+
+  - id: detect-child-process-exec
+    patterns:
+      - pattern-either:
+          - pattern: exec(...)
+          - pattern: execSync(...)
+          - pattern: spawn(...)
+          - pattern: spawnSync(...)
+    message: "Dangerous use of child_process - potential command injection"
+    languages: [javascript, typescript]
+    severity: ERROR
+
+  - id: detect-function-constructor
+    patterns:
+      - pattern: new Function(...)
+    message: "Dangerous use of Function constructor - allows arbitrary code execution"
+    languages: [javascript, typescript]
+    severity: ERROR
