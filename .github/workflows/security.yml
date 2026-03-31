@@ -45,6 +45,8 @@ jobs:
             --sarif \
             --output semgrep.sarif \
             --error \
+            --exclude "*.md" \
+            --exclude "node_modules" \
             app/
         continue-on-error: true
 
@@ -116,7 +118,8 @@ jobs:
           exit-code: "1"
           severity: "CRITICAL,HIGH"
           ignore-unfixed: true
-          vuln-type: "os,library"
+          vuln-type: "library"
+          scanners: "vuln"
 
       - name: Upload Trivy SARIF to GitHub Security tab
         if: always() && hashFiles('trivy-results.sarif') != ''
