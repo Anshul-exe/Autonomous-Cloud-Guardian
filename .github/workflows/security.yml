@@ -38,14 +38,13 @@ jobs:
         id: semgrep
         run: |
           semgrep scan \
-            --config "p/command-injection" \
-            --config "p/dangerous-exec-cmd" \
-            --config "p/javascript-eval" \
+            --config auto \
             --sarif \
             --output semgrep.sarif \
             --error \
             --exclude "*.md" \
             --exclude "node_modules" \
+            --exclude "package-lock.json" \
             app/
         continue-on-error: true
 
