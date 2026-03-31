@@ -15,14 +15,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-data "http" "my_public_ip" {
-  url = "https://checkip.amazonaws.com"
-}
-
-locals {
-  ssh_source_cidr = var.my_ip != null && trimspace(var.my_ip) != "" ? var.my_ip : "${trimspace(data.http.my_public_ip.response_body)}/32"
-}
-
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
   owners      = ["amazon"]
@@ -45,11 +37,11 @@ resource "aws_security_group" "cloud_guardian_sg" {
   description = "Security group for Cloud Guardian project"
 
   ingress {
-    description = "SSH from my IP"
+    description = "SSH from anywhere"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [local.ssh_source_cidr]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {

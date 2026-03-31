@@ -31,7 +31,7 @@ app.get("/load", (req, res) => {
   res.json({ message: "CPU load simulated", result: sum });
 });
 
-// vulnerabilities here
+// vulnerabilities here below
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
