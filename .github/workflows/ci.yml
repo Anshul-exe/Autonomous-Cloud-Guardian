@@ -25,10 +25,10 @@ jobs:
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: node setup
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "npm"
@@ -38,7 +38,7 @@ jobs:
         run: cd app && npm ci
 
       - name: Run ESLint
-        run: cd app & npx eslint index.js --max-warnings=0
+        run: cd app && npx eslint index.js --max-warnings=0
 
       - name: npm audit
         run: cd app && npm audit --audit-level=high
