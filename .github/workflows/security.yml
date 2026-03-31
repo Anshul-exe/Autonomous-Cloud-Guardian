@@ -17,8 +17,11 @@ jobs:
   # JOB1 - SEMGREP -> Static Application Security Testing
   semgrep:
     name: "Semgrep SAST"
+    if: >
+      github.event_name == 'schedule' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
-
     permissions:
       security-events: write
       actions: read
@@ -53,12 +56,11 @@ jobs:
   # JOB2 - Trivy se Image Scan
   trivy-image-scan:
     name: "Trivy Image Scan"
-    runs-on: ubuntu-latest
     if: >
       github.event_name == 'schedule' ||
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
-
+    runs-on: ubuntu-latest
     permissions:
       security-events: write
       actions: read
