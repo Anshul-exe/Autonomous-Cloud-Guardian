@@ -14,6 +14,10 @@ on:
     paths:
       - "app/**"
 
+  workflow_run:
+    workflows: ["CI to start with"]
+    types: [completed]
+
   schedule:
     - cron: "0 2 * * *"
 
@@ -45,7 +49,7 @@ jobs:
             p/nodejs
             p/owasp-top-ten
             p/command-injection
-          generateSarif: "1"
+          # generateSarif: "1"
           # (Static Analysis Results Interchange Format - JSON output, structured)
         env:
           SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
@@ -76,6 +80,7 @@ jobs:
         with:
           name: docker-image-${{ github.sha }}
           path: /tmp
+          run-id: ${{ github.event.workflow_run.id }}
         continue-on-error: true
 
       - name: Load image from artifact (push/PR runs)
@@ -83,7 +88,7 @@ jobs:
         run: |
           if [ -f /tmp/image.tar ]; then
             docker load -i /tmp/image.tar
-            echo "IMAGE_REF=${{ env.IMAGE_NAME }}:${{ github.sha }}" >> $GITHUB_ENV
+            echo "IMAGE_REF=${{ env.IMAGE_NAME }}:${{ github.event.workflow_run.head_sha }}" >> $GITHUB_ENV
           fi
 
       - name: Pull latest image from GHCR (scheduled nightly runs)
