@@ -38,7 +38,7 @@ jobs:
         id: semgrep
         run: |
           semgrep scan \
-            --config app/.semgrep.yml \
+            --config .semgrep.yml \
             --sarif \
             --output semgrep.sarif \
             --error \
