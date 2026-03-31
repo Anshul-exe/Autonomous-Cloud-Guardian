@@ -75,12 +75,14 @@ resource "aws_security_group" "cloud_guardian_sg" {
 }
 
 resource "aws_ssm_parameter" "ec2_ip" {
-  name  = "/cloud-guardian/ec2-public-ip"
-  type  = "String"
-  value = aws_instance.app.public_ip
+  name      = "/cloud-guardian/ec2-public-ip"
+  type      = "String"
+  value     = aws_instance.cloud_guardian.public_ip
+  overwrite = true
 
   tags = {
-    Project = "cloud-guardian"
+    Project   = "cloud-guardian"
+    ManagedBy = "terraform"
   }
 }
 

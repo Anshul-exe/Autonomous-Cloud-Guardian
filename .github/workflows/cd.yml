@@ -1,0 +1,194 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["Security Scans"]
+    types: [completed]
+    branches: [main]
+
+  workflow_dispatch:
+    inputs:
+      skip_checks:
+        description: "Skip waiting for CI/Security (manual deploy)"
+        type: boolean
+        default: false
+
+env:
+  IMAGE_NAME: ghcr.io/anshul-exe/autonomous-cloud-guardian
+  APP_PORT: 3000
+  AWS_REGION: ap-south-1
+
+jobs:
+  # JOB 1 — Push verified image to GHCR and download that same artifact built earlier
+  push-image:
+    name: "Push to GHCR"
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image_tag: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+    steps:
+      - name: Determine commit SHA
+        id: sha
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+          else
+            echo "sha=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-${{ steps.sha.outputs.sha }}
+          path: /tmp
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Load Docker image
+        run: docker load -i /tmp/image.tar
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push image
+        run: |
+          SHA="${{ steps.sha.outputs.sha }}"
+
+          # Tag with commit SHA (immutable) and latest (moving pointer)
+          docker tag ${{ env.IMAGE_NAME }}:${SHA} ${{ env.IMAGE_NAME }}:latest
+
+          docker push ${{ env.IMAGE_NAME }}:${SHA}
+          docker push ${{ env.IMAGE_NAME }}:latest
+
+          echo "### Image Pushed" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.IMAGE_NAME }}:${SHA}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+
+  # JOB 2 — Get EC2 IP from SSM Store after reading IP that terraform wrote
+  get-ec2-ip:
+    name: "Resolve EC2 IP"
+    runs-on: ubuntu-latest
+    needs: push-image
+
+    outputs:
+      ec2_ip: ${{ steps.ssm.outputs.ec2_ip }}
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Read EC2 IP from SSM Parameter Store
+        id: ssm
+        run: |
+          IP=$(aws ssm get-parameter \
+            --name "/cloud-guardian/ec2-public-ip" \
+            --query "Parameter.Value" \
+            --output text 2>/dev/null) || true
+
+          if [ -z "$IP" ] || [ "$IP" = "None" ]; then
+            echo "::error::Could not retrieve IP from SSM. Has terraform apply been run?"
+            exit 1
+          fi
+
+          echo "ec2_ip=$IP" >> $GITHUB_OUTPUT
+          echo "### EC2 Instance" >> $GITHUB_STEP_SUMMARY
+          echo "- **IP:** \`$IP\`" >> $GITHUB_STEP_SUMMARY
+
+  # JOB 3 — Deploy to EC2 by sshing into instance, pulling same image and run health checks to confirm Deployment
+  deploy:
+    name: "Deploy to EC2"
+    runs-on: ubuntu-latest
+    needs: [push-image, get-ec2-ip]
+    permissions:
+      contents: read
+      packages: read
+
+    environment:
+      name: production
+      url: http://${{ needs.get-ec2-ip.outputs.ec2_ip }}:${{ env.APP_PORT }}
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          IMAGE: ${{ env.IMAGE_NAME }}:${{ needs.push-image.outputs.image_tag }}
+          PORT: ${{ env.APP_PORT }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USER: ${{ github.actor }}
+        with:
+          host: ${{ needs.get-ec2-ip.outputs.ec2_ip }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          envs: IMAGE,PORT,GHCR_TOKEN,GHCR_USER
+          script_stop: true
+          script: |
+            set -e
+
+            echo "Logging into GHCR..."
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+
+            echo "==> Pulling image: $IMAGE"
+            docker pull "$IMAGE"
+
+            echo "==> Stopping old container..."
+            docker stop cloud-guardian 2>/dev/null || true
+            docker rm cloud-guardian 2>/dev/null || true
+
+            echo "==> Starting new container..."
+            docker run -d \
+              --name cloud-guardian \
+              --restart unless-stopped \
+              -p "$PORT:$PORT" \
+              -e PORT="$PORT" \
+              "$IMAGE"
+
+            echo "==> Waiting for app to start..."
+            sleep 7
+
+            echo "==> Running health check..."
+            if curl --fail --silent --max-time 10 "http://localhost:$PORT/health"; then
+              echo ""
+              echo "==> Health check passed!"
+            else
+              echo "==> Health check FAILED - rolling back"
+              docker logs cloud-guardian --tail 50
+              docker stop cloud-guardian
+              exit 1
+            fi
+
+            echo "==> Cleaning up old images..."
+            docker image prune -af --filter "until=24h"
+
+            echo "==> Deploy complete!"
+
+      - name: Deployment summary
+        run: |
+          echo "### ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Image** | \`${{ env.IMAGE_NAME }}:${{ needs.push-image.outputs.image_tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Host** | \`${{ needs.get-ec2-ip.outputs.ec2_ip }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **App URL** | http://${{ needs.get-ec2-ip.outputs.ec2_ip }}:${{ env.APP_PORT }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Health** | http://${{ needs.get-ec2-ip.outputs.ec2_ip }}:${{ env.APP_PORT }}/health |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "Check the deploy logs above for details." >> $GITHUB_STEP_SUMMARY
