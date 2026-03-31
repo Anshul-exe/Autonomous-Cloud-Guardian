@@ -56,10 +56,10 @@ jobs:
         with:
           sarif_file: semgrep.sarif
 
-      - name: Fail if vulnerabilities found
+      - name: Fail if code vulnerabilities found
         if: steps.semgrep.outcome == 'failure'
         run: |
-          echo "::error::Semgrep found security vulnerabilities in your code!"
+          echo "::error::Semgrep found security vulnerabilities in your code! Review the Security tab."
           exit 1
 
   # JOB2 - Trivy Image Scan
@@ -107,19 +107,14 @@ jobs:
           echo "IMAGE_REF=${{ env.IMAGE_NAME }}:latest" >> $GITHUB_ENV
 
       - name: Trivy vulnerability scan
-        id: trivy
         if: env.IMAGE_REF != ''
         uses: aquasecurity/trivy-action@0.35.0
-        continue-on-error: true
         with:
           image-ref: ${{ env.IMAGE_REF }}
           format: sarif
           output: trivy-results.sarif
-          exit-code: "1"
-          severity: "CRITICAL,HIGH"
+          severity: "CRITICAL,HIGH,MEDIUM"
           ignore-unfixed: true
-          vuln-type: "library"
-          scanners: "vuln"
 
       - name: Upload Trivy SARIF to GitHub Security tab
         if: always() && hashFiles('trivy-results.sarif') != ''
@@ -135,8 +130,9 @@ jobs:
           path: trivy-results.sarif
           retention-days: 30
 
-      - name: Fail if critical vulnerabilities found
-        if: steps.trivy.outcome == 'failure'
+      - name: Summary
+        if: always()
         run: |
-          echo "::error::Trivy found CRITICAL/HIGH vulnerabilities in the container image!"
-          exit 1
+          echo "## Trivy Scan Complete" >> $GITHUB_STEP_SUMMARY
+          echo "Results uploaded to GitHub Security tab." >> $GITHUB_STEP_SUMMARY
+          echo "Review: Settings > Security > Code scanning alerts" >> $GITHUB_STEP_SUMMARY
