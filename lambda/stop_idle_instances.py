@@ -46,11 +46,11 @@ def get_cpu_utilization(instance_id):
 def lambda_handler(event, context):
     """Main Lambda handler"""
     
-    # Get all running instances with our tag
+    # Get all running instances with our project tag
     response = ec2.describe_instances(
         Filters=[
             {'Name': 'instance-state-name', 'Values': ['running']},
-            {'Name': 'tag:Name', 'Values': ['cloud-guardian-app']}
+            {'Name': 'tag:Project', 'Values': ['cloud-guardian']}
         ]
     )
     
@@ -100,8 +100,3 @@ def lambda_handler(event, context):
             'stopped_instances': stopped_instances
         })
     }
-```
-
-**Create `requirements.txt`:**
-```
-urllib3<2

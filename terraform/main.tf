@@ -99,6 +99,7 @@ resource "aws_instance" "cloud_guardian" {
 
   tags = {
     Name        = "cloud-guardian-app"
+    Project     = "cloud-guardian"
     Environment = "demo"
     ManagedBy   = "terraform"
   }
