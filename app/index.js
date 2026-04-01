@@ -25,7 +25,7 @@ app.get("/health", (req, res) => {
 // Hello endpoint
 app.get("/hello", (req, res) => {
   res.json({
-    message: "hello world",
+    message: "hello world!",
   });
 });
 
