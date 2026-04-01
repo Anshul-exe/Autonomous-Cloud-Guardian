@@ -12,12 +12,12 @@
 
 Autonomous Cloud Guardian demonstrates enterprise-grade DevSecOps and FinOps practices through a real-world implementation:
 
-| Pillar | Implementation |
-|--------|---------------|
-| **DevSecOps** | Automated SAST (Semgrep) + Container scanning (Trivy) in CI/CD |
-| **FinOps** | Lambda-based idle resource detection, auto-stop, and savings tracking |
-| **Infrastructure** | Terraform-managed AWS resources with least-privilege IAM |
-| **Observability** | CloudWatch dashboards for cost and security metrics |
+| Pillar             | Implementation                                                        |
+| ------------------ | --------------------------------------------------------------------- |
+| **DevSecOps**      | Automated SAST (Semgrep) + Container scanning (Trivy) in CI/CD        |
+| **FinOps**         | Lambda-based idle resource detection, auto-stop, and savings tracking |
+| **Infrastructure** | Terraform-managed AWS resources with least-privilege IAM              |
+| **Observability**  | CloudWatch dashboards for cost and security metrics                   |
 
 ---
 
@@ -71,20 +71,20 @@ flowchart TB
 
 ### Security Tools
 
-| Tool | Purpose | Integration |
-|------|---------|-------------|
-| **Semgrep** | Static Application Security Testing (SAST) | Custom rules in `.semgrep.yml` detecting `eval()`, `exec()`, code injection |
-| **Trivy** | Container vulnerability scanning | Scans Docker image for CVEs in OS packages and dependencies |
-| **ESLint** | Code quality + security linting | `eslint-plugin-security` for JS-specific vulnerabilities |
-| **npm audit** | Dependency vulnerability check | Blocks on HIGH severity issues |
+| Tool          | Purpose                                    | Integration                                                                 |
+| ------------- | ------------------------------------------ | --------------------------------------------------------------------------- |
+| **Semgrep**   | Static Application Security Testing (SAST) | Custom rules in `.semgrep.yml` detecting `eval()`, `exec()`, code injection |
+| **Trivy**     | Container vulnerability scanning           | Scans Docker image for CVEs in OS packages and dependencies                 |
+| **ESLint**    | Code quality + security linting            | `eslint-plugin-security` for JS-specific vulnerabilities                    |
+| **npm audit** | Dependency vulnerability check             | Blocks on HIGH severity issues                                              |
 
 ### Custom Semgrep Rules
 
 ```yaml
 # Detects dangerous patterns
-- eval(...)           # Code injection
-- exec(...)           # Command injection
-- new Function(...)   # Dynamic code execution
+- eval(...) # Code injection
+- exec(...) # Command injection
+- new Function(...) # Dynamic code execution
 ```
 
 ---
@@ -169,12 +169,12 @@ npm run dev
 
 ### API Endpoints
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /` | Application info |
-| `GET /health` | Health check with uptime |
-| `GET /hello` | Hello world |
-| `GET /load` | CPU load simulation (for testing) |
+| Endpoint      | Description                       |
+| ------------- | --------------------------------- |
+| `GET /`       | Application info                  |
+| `GET /health` | Health check with uptime          |
+| `GET /hello`  | Hello world                       |
+| `GET /load`   | CPU load simulation (for testing) |
 
 ---
 
@@ -202,16 +202,19 @@ Cloud-Guardian/
 ## 🛠️ Technologies
 
 ### Infrastructure & Cloud
+
 ![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat&logo=amazon-aws&logoColor=white)
 ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=flat&logo=terraform&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
 
 ### CI/CD & Security
+
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat&logo=github-actions&logoColor=white)
 ![Semgrep](https://img.shields.io/badge/Semgrep-4B11A8?style=flat&logo=semgrep&logoColor=white)
 ![Trivy](https://img.shields.io/badge/Trivy-1904DA?style=flat&logo=aqua&logoColor=white)
 
 ### Application
+
 ![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=node.js&logoColor=white)
 ![Express](https://img.shields.io/badge/Express-000000?style=flat&logo=express&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
@@ -220,16 +223,16 @@ Cloud-Guardian/
 
 ## 📊 Skills Demonstrated
 
-| Category | Skills |
-|----------|--------|
-| **Infrastructure as Code** | Terraform modules, state management, AWS provider |
-| **CI/CD** | GitHub Actions, multi-stage pipelines, artifact management |
-| **DevSecOps** | SAST integration, container scanning, SARIF reports, shift-left security |
-| **FinOps** | Cost optimization automation, idle resource detection, savings tracking |
-| **Cloud Services** | EC2, Lambda, CloudWatch, EventBridge, IAM, SSM Parameter Store |
-| **Containerization** | Docker, GHCR, image scanning, multi-stage builds |
-| **Serverless** | Lambda functions, event-driven architecture |
-| **Monitoring** | CloudWatch dashboards, metrics, alarms |
+| Category                   | Skills                                                                   |
+| -------------------------- | ------------------------------------------------------------------------ |
+| **Infrastructure as Code** | Terraform modules, state management, AWS provider                        |
+| **CI/CD**                  | GitHub Actions, multi-stage pipelines, artifact management               |
+| **DevSecOps**              | SAST integration, container scanning, SARIF reports, shift-left security |
+| **FinOps**                 | Cost optimization automation, idle resource detection, savings tracking  |
+| **Cloud Services**         | EC2, Lambda, CloudWatch, EventBridge, IAM, SSM Parameter Store           |
+| **Containerization**       | Docker, GHCR, image scanning, multi-stage builds                         |
+| **Serverless**             | Lambda functions, event-driven architecture                              |
+| **Monitoring**             | CloudWatch dashboards, metrics, alarms                                   |
 
 ---
 

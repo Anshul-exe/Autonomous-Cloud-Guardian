@@ -179,7 +179,7 @@ jobs:
 
       - name: Deployment summary
         run: |
-          echo "### ✅ Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
@@ -191,5 +191,5 @@ jobs:
       - name: Notify on failure
         if: failure()
         run: |
-          echo "### ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Failed" >> $GITHUB_STEP_SUMMARY
           echo "Check the deploy logs above for details." >> $GITHUB_STEP_SUMMARY
