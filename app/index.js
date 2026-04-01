@@ -26,6 +26,7 @@ app.get("/health", (req, res) => {
 app.get("/hello", (req, res) => {
   res.json({
     message: "hello world!",
+    timestamp: new Date(),
   });
 });
 
