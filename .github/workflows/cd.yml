@@ -195,11 +195,12 @@ jobs:
           PORT: ${{ env.APP_PORT }}
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GHCR_USER: ${{ github.actor }}
+          AWS_REGION: ${{ env.AWS_REGION }}
         with:
           host: ${{ needs.get-ec2-ip.outputs.ec2_ip }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: IMAGE,PORT,GHCR_TOKEN,GHCR_USER
+          envs: IMAGE,PORT,GHCR_TOKEN,GHCR_USER,AWS_REGION
           script_stop: true
           script: |
             set -e
@@ -214,12 +215,17 @@ jobs:
             docker stop cloud-guardian 2>/dev/null || true
             docker rm cloud-guardian 2>/dev/null || true
 
-            echo "==> Starting new container..."
+            echo "==> Starting new container with CloudWatch logging..."
             docker run -d \
               --name cloud-guardian \
               --restart unless-stopped \
               -p "$PORT:$PORT" \
               -e PORT="$PORT" \
+              --log-driver=awslogs \
+              --log-opt awslogs-region="$AWS_REGION" \
+              --log-opt awslogs-group=/cloud-guardian/app \
+              --log-opt awslogs-stream=app-$(date +%Y%m%d) \
+              --log-opt awslogs-create-group=true \
               "$IMAGE"
 
             echo "==> Waiting for app to start..."
