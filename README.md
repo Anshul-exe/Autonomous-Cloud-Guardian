@@ -25,48 +25,108 @@ Autonomous Cloud Guardian demonstrates enterprise-grade DevSecOps and FinOps pra
 
 ```mermaid
 flowchart TB
-    subgraph "GitHub"
-        A[Push to Main] --> B[CI Workflow]
-        B --> B1[Lint & Build]
-        B1 --> B2[Build Docker Image]
-        B2 --> B3[Save as Artifact]
-
-        B3 --> C[Security Workflow]
-        C --> C1[Semgrep SAST]
-        C --> C2[Trivy Container Scan]
-        C1 & C2 --> C3[SARIF → GitHub Security]
-
-        B3 --> D[CD Workflow]
-        D --> D1{Security Passed?}
-        D1 -->|Yes| D2[Push to GHCR]
-        D1 -->|No| D3[❌ Block Deploy]
-        D2 --> D4[Deploy via SSH]
+    subgraph GH["&nbsp;&nbsp;☁️ GITHUB ACTIONS PIPELINE &nbsp;&nbsp;"]
+        direction TB
+        A["🚀 <b>Push to Main</b>"]
+        
+        subgraph CI["&nbsp; 🔨 CI Workflow &nbsp;"]
+            direction LR
+            B1["📋 Lint &<br/>Build"]
+            B2["🐳 Build<br/>Docker Image"]
+            B3["💾 Save<br/>Artifact"]
+            B1 --> B2 --> B3
+        end
+        
+        subgraph SEC["&nbsp; 🔒 Security Workflow &nbsp;"]
+            direction LR
+            C1["🔍 Semgrep<br/>SAST Scan"]
+            C2["🛡️ Trivy<br/>Container Scan"]
+            C3["📊 SARIF →<br/>Security Tab"]
+            C1 --> C3
+            C2 --> C3
+        end
+        
+        subgraph CD["&nbsp; 🚢 CD Workflow &nbsp;"]
+            direction LR
+            D1{"✅ Security<br/>Passed?"}
+            D2["📦 Push to<br/>GHCR"]
+            D3["❌ Block<br/>Deploy"]
+            D4["🔗 Deploy<br/>via SSH"]
+            D1 -->|"Yes"| D2
+            D1 -->|"No"| D3
+            D2 --> D4
+        end
+        
+        A --> CI
+        CI --> SEC
+        CI --> CD
     end
 
-    subgraph "AWS Infrastructure"
-        SSM[(SSM Parameter Store)]
-        D4 --> |Get EC2 IP| SSM
-        D4 --> EC2[EC2 Instance]
-        EC2 --> |Docker Pull| GHCR[GHCR Registry]
-        EC2 --> APP[Node.js App :3000]
-
-        EB[EventBridge] -->|Hourly| LAMBDA[Lambda: stop-idle]
-        LAMBDA --> |Query CPU| CW[CloudWatch Metrics]
-        LAMBDA -->|CPU < 5%| EC2
-        LAMBDA -->|Stop Instance| EC2
+    subgraph AWS["&nbsp;&nbsp;☁️ AWS INFRASTRUCTURE &nbsp;&nbsp;"]
+        direction TB
+        
+        subgraph COMPUTE["&nbsp; 💻 Compute Layer &nbsp;"]
+            direction LR
+            SSM[("🔑 SSM<br/>Parameter Store")]
+            EC2["🖥️ <b>EC2 Instance</b><br/>Amazon Linux 2"]
+            APP["⚡ Node.js App<br/>Express :3000"]
+            EC2 --> APP
+        end
+        
+        subgraph FINOPS["&nbsp; 💰 FinOps Automation &nbsp;"]
+            direction LR
+            EB["⏰ EventBridge<br/>Hourly Trigger"]
+            LAMBDA["⚙️ <b>Lambda</b><br/>stop-idle-instances"]
+            CW["📈 CloudWatch<br/>CPU Metrics"]
+            EB --> LAMBDA
+            LAMBDA --> CW
+        end
+        
+        LAMBDA -->|"CPU < 5%<br/>Stop Instance"| EC2
     end
 
-    subgraph "Notifications"
-        LAMBDA --> SLACK[Slack Webhook]
-        SLACK --> ALERT[🛑 Instance Stopped Alert]
+    subgraph NOTIFY["&nbsp;&nbsp;📢 NOTIFICATIONS &nbsp;&nbsp;"]
+        SLACK["💬 <b>Slack Webhook</b>"]
+        ALERT["🛑 Instance Stopped<br/>+ Cost Savings Alert"]
+        SLACK --> ALERT
     end
 
-    subgraph "IaC"
-        TF[Terraform] --> |Provisions| EC2
-        TF --> |Provisions| LAMBDA
-        TF --> |Provisions| SSM
-        TF --> |Provisions| EB
+    subgraph IAC["&nbsp;&nbsp;🏗️ INFRASTRUCTURE AS CODE &nbsp;&nbsp;"]
+        TF["🟪 <b>Terraform</b><br/>AWS Provider v6"]
     end
+
+    D4 -->|"Get EC2 IP"| SSM
+    D4 -->|"SSH Deploy"| EC2
+    EC2 -.->|"Docker Pull"| GHCR["📦 GHCR<br/>Registry"]
+    
+    LAMBDA -->|"Notify"| SLACK
+    
+    TF -.->|"Provisions"| EC2
+    TF -.->|"Provisions"| LAMBDA
+    TF -.->|"Provisions"| SSM
+    TF -.->|"Provisions"| EB
+    TF -.->|"Provisions"| CW
+
+    %% Styling
+    classDef github fill:#24292e,stroke:#58a6ff,stroke-width:2px,color:#fff
+    classDef aws fill:#232f3e,stroke:#ff9900,stroke-width:2px,color:#fff
+    classDef security fill:#1a1a2e,stroke:#e94560,stroke-width:2px,color:#fff
+    classDef finops fill:#0d2137,stroke:#00d4aa,stroke-width:2px,color:#fff
+    classDef notify fill:#2d1b4e,stroke:#a855f7,stroke-width:2px,color:#fff
+    classDef terraform fill:#1a1a2e,stroke:#7b42bc,stroke-width:2px,color:#fff
+    classDef action fill:#0d419d,stroke:#58a6ff,stroke-width:2px,color:#fff
+    classDef decision fill:#854d0e,stroke:#fbbf24,stroke-width:2px,color:#fff
+    classDef danger fill:#7f1d1d,stroke:#ef4444,stroke-width:2px,color:#fff
+    
+    class GH github
+    class AWS,COMPUTE aws
+    class SEC security
+    class FINOPS finops
+    class NOTIFY notify
+    class IAC,TF terraform
+    class A,B1,B2,B3,D2,D4 action
+    class D1 decision
+    class D3 danger
 ```
 
 ### Component Flow
@@ -235,20 +295,43 @@ Cloud-Guardian/
 ### Infrastructure & Cloud
 
 ![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat&logo=amazon-aws&logoColor=white)
+![EC2](https://img.shields.io/badge/EC2-FF9900?style=flat&logo=amazon-ec2&logoColor=white)
+![Lambda](https://img.shields.io/badge/Lambda-FF9900?style=flat&logo=aws-lambda&logoColor=white)
+![CloudWatch](https://img.shields.io/badge/CloudWatch-FF4F8B?style=flat&logo=amazon-cloudwatch&logoColor=white)
+![EventBridge](https://img.shields.io/badge/EventBridge-FF4F8B?style=flat&logo=amazon-aws&logoColor=white)
+![IAM](https://img.shields.io/badge/IAM-DD344C?style=flat&logo=amazon-aws&logoColor=white)
+![SSM](https://img.shields.io/badge/SSM_Parameter_Store-232F3E?style=flat&logo=amazon-aws&logoColor=white)
 ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=flat&logo=terraform&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
+![Alpine Linux](https://img.shields.io/badge/Alpine_Linux-0D597F?style=flat&logo=alpine-linux&logoColor=white)
 
-### CI/CD & Security
+### CI/CD & DevOps
 
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat&logo=github-actions&logoColor=white)
+![GHCR](https://img.shields.io/badge/GHCR-181717?style=flat&logo=github&logoColor=white)
+![SSH](https://img.shields.io/badge/SSH-4D4D4D?style=flat&logo=openssh&logoColor=white)
+
+### Security & Code Quality
+
 ![Semgrep](https://img.shields.io/badge/Semgrep-4B11A8?style=flat&logo=semgrep&logoColor=white)
 ![Trivy](https://img.shields.io/badge/Trivy-1904DA?style=flat&logo=aqua&logoColor=white)
+![ESLint](https://img.shields.io/badge/ESLint-4B32C3?style=flat&logo=eslint&logoColor=white)
+![npm audit](https://img.shields.io/badge/npm_audit-CB3837?style=flat&logo=npm&logoColor=white)
+![SARIF](https://img.shields.io/badge/SARIF-0078D4?style=flat&logo=github&logoColor=white)
+![CodeQL](https://img.shields.io/badge/CodeQL-000000?style=flat&logo=github&logoColor=white)
 
-### Application
+### Application & Runtime
 
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat&logo=node.js&logoColor=white)
-![Express](https://img.shields.io/badge/Express-000000?style=flat&logo=express&logoColor=white)
-![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js_20-339933?style=flat&logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express_5-000000?style=flat&logo=express&logoColor=white)
+![Python](https://img.shields.io/badge/Python_3.9-3776AB?style=flat&logo=python&logoColor=white)
+![Boto3](https://img.shields.io/badge/Boto3-232F3E?style=flat&logo=amazon-aws&logoColor=white)
+
+### Notifications & Monitoring
+
+![Slack](https://img.shields.io/badge/Slack_Webhooks-4A154B?style=flat&logo=slack&logoColor=white)
+![CloudWatch Logs](https://img.shields.io/badge/CloudWatch_Logs-FF4F8B?style=flat&logo=amazon-cloudwatch&logoColor=white)
+![CloudWatch Dashboards](https://img.shields.io/badge/CloudWatch_Dashboards-FF4F8B?style=flat&logo=amazon-cloudwatch&logoColor=white)
 
 ---
 
