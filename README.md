@@ -2,9 +2,9 @@
 
 > **A FinOps + DevSecOps Platform** — Automatically secures code and optimizes cloud costs
 
-[![CI](https://github.com/Anshul-exe/Autonomous-Cloud-Guardian/actions/workflows/ci.yml/badge.svg)](https://github.com/Anshul-exe/Autonomous-Cloud-Guardian/actions/workflows/ci.yml)
+<!--[![CI](https://github.com/Anshul-exe/Autonomous-Cloud-Guardian/actions/workflows/ci.yml/badge.svg)](https://github.com/Anshul-exe/Autonomous-Cloud-Guardian/actions/workflows/ci.yml)
 [![Security Scans](https://github.com/Anshul-exe/Autonomous-Cloud-Guardian/actions/workflows/security.yml/badge.svg)](https://github.com/Anshul-exe/Autonomous-Cloud-Guardian/actions/workflows/security.yml)
-[![CD](https://github.com/Anshul-exe/Autonomous-Cloud-Guardian/actions/workflows/cd.yml/badge.svg)](https://github.com/Anshul-exe/Autonomous-Cloud-Guardian/actions/workflows/cd.yml)
+[![CD](https://github.com/Anshul-exe/Autonomous-Cloud-Guardian/actions/workflows/cd.yml/badge.svg)](https://github.com/Anshul-exe/Autonomous-Cloud-Guardian/actions/workflows/cd.yml)-->
 
 ---
 
