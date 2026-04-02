@@ -25,30 +25,57 @@ Autonomous Cloud Guardian demonstrates enterprise-grade DevSecOps and FinOps pra
 
 ```mermaid
 flowchart TB
-    subgraph "CI/CD Pipeline"
-        A[Push to Main] --> B[CI: Lint & Build]
-        B --> C[Security: Semgrep SAST]
-        B --> D[Security: Trivy Scan]
-        C --> E{Vulnerabilities?}
-        D --> E
-        E -->|No| F[CD: Push to GHCR]
-        E -->|Yes| G[❌ Block Deploy]
-        F --> H[Deploy to EC2]
+    subgraph "GitHub"
+        A[Push to Main] --> B[CI Workflow]
+        B --> B1[Lint & Build]
+        B1 --> B2[Build Docker Image]
+        B2 --> B3[Save as Artifact]
+
+        B3 --> C[Security Workflow]
+        C --> C1[Semgrep SAST]
+        C --> C2[Trivy Container Scan]
+        C1 & C2 --> C3[SARIF → GitHub Security]
+
+        B3 --> D[CD Workflow]
+        D --> D1{Security Passed?}
+        D1 -->|Yes| D2[Push to GHCR]
+        D1 -->|No| D3[❌ Block Deploy]
+        D2 --> D4[Deploy via SSH]
     end
 
     subgraph "AWS Infrastructure"
-        H --> I[EC2: Docker App]
-        J[EventBridge] -->|Every 15 min| K[Lambda: Idle Checker]
-        K --> L[CloudWatch Metrics]
-        K -->|CPU < 5%| M[Stop Idle EC2]
-        M --> N[Log Savings]
+        SSM[(SSM Parameter Store)]
+        D4 --> |Get EC2 IP| SSM
+        D4 --> EC2[EC2 Instance]
+        EC2 --> |Docker Pull| GHCR[GHCR Registry]
+        EC2 --> APP[Node.js App :3000]
+
+        EB[EventBridge] -->|Hourly| LAMBDA[Lambda: stop-idle]
+        LAMBDA --> |Query CPU| CW[CloudWatch Metrics]
+        LAMBDA -->|CPU < 5%| EC2
+        LAMBDA -->|Stop Instance| EC2
     end
 
-    subgraph "Monitoring"
-        L --> O[CloudWatch Dashboard]
-        N --> O
+    subgraph "Notifications"
+        LAMBDA --> SLACK[Slack Webhook]
+        SLACK --> ALERT[🛑 Instance Stopped Alert]
+    end
+
+    subgraph "IaC"
+        TF[Terraform] --> |Provisions| EC2
+        TF --> |Provisions| LAMBDA
+        TF --> |Provisions| SSM
+        TF --> |Provisions| EB
     end
 ```
+
+### Component Flow
+
+| Flow       | Description                                                                   |
+| ---------- | ----------------------------------------------------------------------------- |
+| **CI/CD**  | Push → Build → Scan → Deploy to EC2 via SSH                                   |
+| **FinOps** | EventBridge (hourly) → Lambda checks CPU → Stops idle instances → Slack alert |
+| **IaC**    | Terraform manages all AWS resources with `Project: cloud-guardian` tagging    |
 
 ---
 
@@ -96,38 +123,37 @@ flowchart TB
 ```
 ┌──────────────────┐
 │   EventBridge    │
-│  (Every 15 min)  │
+│   (Every Hour)   │
 └────────┬─────────┘
          │
          ▼
 ┌──────────────────┐     ┌──────────────────┐
 │  Lambda Function │────▶│ CloudWatch Metrics│
-│  (Idle Checker)  │     │  (CPU Utilization)│
+│  (stop-idle)     │     │  (CPU Utilization)│
 └────────┬─────────┘     └──────────────────┘
          │
          ▼
-┌──────────────────┐
-│  CPU < 5% for    │───Yes───▶ Stop Instance
-│   30 minutes?    │           + Log Savings
-└──────────────────┘
+┌──────────────────┐     ┌──────────────────┐
+│  CPU < 5% avg    │─Yes─▶│  Stop Instance   │
+│  (last hour)?    │      │  + Slack Alert   │
+└──────────────────┘     └──────────────────┘
 ```
 
 ### How It Works
 
-1. **EventBridge** triggers Lambda every 15 minutes
-2. **Lambda** queries CloudWatch for CPU utilization metrics
-3. Instances with `AutoStop: true` tag and avg CPU < 5% over 30 minutes are stopped
-4. **Savings calculated** based on instance type hourly rate
-5. **Dashboard** displays cumulative savings and actions
+1. **EventBridge** triggers Lambda every hour
+2. **Lambda** queries CloudWatch for average CPU utilization (last hour)
+3. Instances tagged with `Project: cloud-guardian` and avg CPU < 5% are stopped
+4. **Slack notification** sent with instance details and estimated savings
+5. Instances can be restarted manually when needed
 
 ### Cost Optimization Features
 
-- ✅ Auto-stop idle EC2 instances
-- ✅ Tag-based targeting (opt-in via `AutoStop: true`)
-- ✅ Savings tracking and reporting
-- ✅ CloudWatch dashboard for visibility
-- ✅ Slack notifications
-- ✅ Grafana integration
+- ✅ Auto-stop idle EC2 instances (CPU < 5%)
+- ✅ Tag-based targeting (`Project: cloud-guardian`)
+- ✅ Slack notifications with estimated savings
+- 🔲 Cost report Lambda (AWS Cost Explorer)
+- 🔲 CloudWatch dashboard for visibility
 
 ---
 
@@ -169,12 +195,12 @@ npm run dev
 
 ### API Endpoints
 
-| Endpoint      | Description                       |
-| ------------- | --------------------------------- |
-| `GET /`       | Application info                  |
-| `GET /health` | Health check with uptime          |
-| `GET /hello`  | Hello world                       |
-| `GET /load`   | CPU load simulation (for testing) |
+| Endpoint      | Description                          |
+| ------------- | ------------------------------------ |
+| `GET /`       | Application info                     |
+| `GET /health` | Health check with uptime             |
+| `GET /hello`  | Hello world                          |
+| `GET /load`   | Real-time CPU and memory utilization |
 
 ---
 
@@ -183,17 +209,22 @@ npm run dev
 ```
 Cloud-Guardian/
 ├── app/
-│   ├── index.js              # Express.js API
+│   ├── index.js              # Express.js API with health/load endpoints
 │   ├── Dockerfile            # Multi-stage Docker build
 │   └── package.json          # Dependencies
+├── lambda/
+│   └── package/
+│       └── stop_idle_instances.py  # FinOps Lambda function
 ├── terraform/
-│   ├── main.tf               # EC2, Security Groups
+│   ├── main.tf               # EC2, Security Groups, SSM
+│   ├── lambda.tf             # Lambda, EventBridge, IAM roles
 │   ├── variables.tf          # Configuration variables
+│   ├── observability.tf      # cloudwatch observability
 │   └── outputs.tf            # Deployment outputs
 ├── .github/workflows/
-│   ├── ci.yml                # Build & test pipeline
-│   ├── security.yml          # Semgrep + Trivy scans
-│   └── cd.yml                # Deploy to EC2
+│   ├── ci.yml                # Build, lint, test, artifact creation
+│   ├── security.yml          # Semgrep SAST + Trivy container scan
+│   └── cd.yml                # Deploy to EC2 via SSH
 └── .semgrep.yml              # Custom security rules
 ```
 
@@ -233,20 +264,5 @@ Cloud-Guardian/
 | **Containerization**       | Docker, GHCR, image scanning, multi-stage builds                         |
 | **Serverless**             | Lambda functions, event-driven architecture                              |
 | **Monitoring**             | CloudWatch dashboards, metrics, alarms                                   |
-
----
-
-## 🔮 Roadmap
-
-- [x] CI/CD Pipeline with GitHub Actions
-- [x] Semgrep SAST integration
-- [x] Trivy container scanning
-- [x] Terraform-managed infrastructure
-- [ ] Lambda idle EC2 stopper
-- [ ] CloudWatch dashboard
-- [ ] Savings tracker script
-- [ ] Slack notifications
-- [ ] Grafana dashboards
-- [ ] Multi-region deployment
 
 ---
