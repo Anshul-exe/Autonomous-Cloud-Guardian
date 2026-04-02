@@ -104,3 +104,24 @@ resource "aws_instance" "cloud_guardian" {
     ManagedBy   = "terraform"
   }
 }
+# Idle test instance (will be stopped by Lambda)
+resource "aws_instance" "idle_instance" {
+  ami           = data.aws_ami.amazon_linux_2.id
+  instance_type = var.instance_type
+  key_name      = aws_key_pair.cloud_guardian_key.key_name
+
+  vpc_security_group_ids      = [aws_security_group.cloud_guardian_sg.id]
+  associate_public_ip_address = true
+
+  monitoring = true
+
+  # No user_data = no Docker, no workload = idle
+
+  tags = {
+    Name        = "cloud-guardian-idle-test"
+    Project     = "cloud-guardian"
+    Environment = "demo"
+    ManagedBy   = "terraform"
+    Purpose     = "FinOps-Test"
+  }
+}

@@ -1,4 +1,5 @@
 const express = require("express");
+const os = require("os");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -30,13 +31,37 @@ app.get("/hello", (req, res) => {
   });
 });
 
-// Dummy load endpoint
+// CPU load endpoint with realtime stats
 app.get("/load", (req, res) => {
-  let sum = 0;
-  for (let i = 0; i < 1e7; i++) {
-    sum += i;
-  }
-  res.json({ message: "CPU load simulated", result: sum });
+  const cpus = os.cpus();
+  
+  let totalIdle = 0, totalTick = 0;
+  cpus.forEach(cpu => {
+    const times = cpu.times;
+    totalTick += times.user + times.nice + times.sys + times.idle + times.irq;
+    totalIdle += times.idle;
+  });
+  
+  const cpuUsage = ((1 - totalIdle / totalTick) * 100).toFixed(2);
+  const loadAvg = os.loadavg();
+
+  res.json({
+    cpu: {
+      cores: cpus.length,
+      usage: `${cpuUsage}%`,
+      load_average: {
+        "1min": loadAvg[0].toFixed(2),
+        "5min": loadAvg[1].toFixed(2),
+        "15min": loadAvg[2].toFixed(2)
+      }
+    },
+    memory: {
+      total: `${(os.totalmem() / 1024 / 1024 / 1024).toFixed(2)} GB`,
+      free: `${(os.freemem() / 1024 / 1024 / 1024).toFixed(2)} GB`,
+      used_percent: `${((1 - os.freemem() / os.totalmem()) * 100).toFixed(2)}%`
+    },
+    timestamp: new Date()
+  });
 });
 
 // vulnerabilities here below
