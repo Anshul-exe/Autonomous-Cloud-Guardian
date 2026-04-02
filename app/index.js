@@ -34,14 +34,15 @@ app.get("/hello", (req, res) => {
 // CPU load endpoint with realtime stats
 app.get("/load", (req, res) => {
   const cpus = os.cpus();
-  
-  let totalIdle = 0, totalTick = 0;
-  cpus.forEach(cpu => {
+
+  let totalIdle = 0,
+    totalTick = 0;
+  cpus.forEach((cpu) => {
     const times = cpu.times;
     totalTick += times.user + times.nice + times.sys + times.idle + times.irq;
     totalIdle += times.idle;
   });
-  
+
   const cpuUsage = ((1 - totalIdle / totalTick) * 100).toFixed(2);
   const loadAvg = os.loadavg();
 
@@ -52,20 +53,20 @@ app.get("/load", (req, res) => {
       load_average: {
         "1min": loadAvg[0].toFixed(2),
         "5min": loadAvg[1].toFixed(2),
-        "15min": loadAvg[2].toFixed(2)
-      }
+        "15min": loadAvg[2].toFixed(2),
+      },
     },
     memory: {
       total: `${(os.totalmem() / 1024 / 1024 / 1024).toFixed(2)} GB`,
       free: `${(os.freemem() / 1024 / 1024 / 1024).toFixed(2)} GB`,
-      used_percent: `${((1 - os.freemem() / os.totalmem()) * 100).toFixed(2)}%`
+      used_percent: `${((1 - os.freemem() / os.totalmem()) * 100).toFixed(2)}%`,
     },
-    timestamp: new Date()
+    timestamp: new Date(),
   });
 });
 
 // vulnerabilities here below
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
